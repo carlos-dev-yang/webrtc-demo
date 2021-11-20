@@ -1,44 +1,39 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { SocketRoom, Users } from './type';
+import { SocketRoom, IRooms } from './type';
 
 const app = express();
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: '*' } });
 
-const users: Users = {};
+const rooms: IRooms = {};
 const socketToRoom: SocketRoom = {};
 const maximum = 2;
 
 io.on('connection', (socket) => {
   console.log('connection established');
 
-  socket.emit('hello', 'world');
-
-  socket.on('join_room', (data) => {
-    if (users[data.room]) {
-      const length = users[data.room].length;
+  socket.on('join_room', (roomId: string) => {
+    if (rooms[roomId]) {
+      const length = rooms[roomId].length;
       if (length === maximum) {
         socket.to(socket.id).emit('room_full');
         return;
       }
-      users[data.room].push({ id: socket.id, email: data.email });
+      rooms[roomId].push(socket.id);
     } else {
-      users[data.room] = [{ id: socket.id, email: data.email }];
+      rooms[roomId] = [socket.id];
     }
-    socketToRoom[socket.id] = data.room;
+    socketToRoom[socket.id] = roomId;
 
-    socket.join(data.room);
-    console.log(`[${socketToRoom[socket.id]}]: ${socket.id} enter`);
-
-    // 본인을 제외한 같은 room의 user array
-    const usersInThisRoom = users[data.room].filter(
-      (user) => user.id !== socket.id
+    socket.join(roomId);
+    const usersInThisRoom = rooms[roomId].filter(
+      (userId) => userId !== socket.id
     );
 
-    console.log(usersInThisRoom);
+    console.log('usersInThisRoom', usersInThisRoom);
 
     io.sockets.to(socket.id).emit('all_users', usersInThisRoom);
   });
@@ -59,20 +54,20 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log(`[${socketToRoom[socket.id]}]: ${socket.id} exit`);
+    // console.log(`[${socketToRoom[socket.id]}]: ${socket.id} exit`);
     // disconnect한 user가 포함된 roomID
     const roomID = socketToRoom[socket.id];
-    // room에 포함된 유저
-    let room = users[roomID];
-    // room이 존재한다면(user들이 포함된)
+    // // room에 포함된 유저
+    let room = rooms[roomID];
+    // // room이 존재한다면(user들이 포함된)
     if (room) {
-      // disconnect user를 제외
-      room = room.filter((user) => user.id !== socket.id);
-      users[roomID] = room;
+      //   // disconnect user를 제외
+      room = room.filter((userId) => userId !== socket.id);
+      rooms[roomID] = room;
     }
-    // 어떤 user가 나갔는 지 room의 다른 user들에게 통보
-    socket.broadcast.to(roomID).emit('user_exit', { id: socket.id });
-    console.log(users);
+    // // 어떤 user가 나갔는 지 room의 다른 user들에게 통보
+    // socket.broadcast.to(roomID).emit('user_exit', { id: socket.id });
+    console.log(rooms);
   });
 });
 

@@ -88,17 +88,17 @@ export function Call() {
     console.log(`Failed to create session description: ${error}`);
   };
 
-  function onSetLocalSuccess(pc: IPC) {
+  const onSetLocalSuccess = (pc: IPC) => {
     console.log(`${getName(pc)} setLocalDescription complete`);
-  }
+  };
 
-  function onSetRemoteSuccess(pc: IPC) {
+  const onSetRemoteSuccess = (pc: IPC) => {
     console.log(`${getName(pc)} setRemoteDescription complete`);
-  }
+  };
 
-  function onSetSessionDescriptionError(error?: unknown) {
+  const onSetSessionDescriptionError = (error?: unknown) => {
     console.log(`Failed to set session description: ${error}`);
-  }
+  };
 
   const getName = (pc: IPC) => (pc === pc1 ? 'pc1' : 'pc2');
   const getOtherPc = (pc: IPC) => (pc === pc1 ? pc2 : pc1);

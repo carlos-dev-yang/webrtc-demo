@@ -17,8 +17,8 @@ export interface SocketData {
   age: number;
 }
 
-export interface Users {
-  [key: string]: { id: string; email: string }[];
+export interface IRooms {
+  [key: string]: string[];
 }
 
 export interface SocketRoom {
