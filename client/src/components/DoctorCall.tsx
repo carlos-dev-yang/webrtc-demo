@@ -1,13 +1,24 @@
 import { useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
-import { PC_CONFIG } from './config';
+import { PC_CONFIG, SocketDomain } from './config';
 
-// const socket = io('http://localhost:8080');
-export function Caller() {
+export function DoctorCall() {
   const socketRef = useRef<Socket>();
   const pcRef = useRef<RTCPeerConnection>();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+
+  let location = useLocation();
+  let navigate = useNavigate();
+  const { state } = location;
+
+  const handleBackToRoom = () => {
+    navigate('/patientRoom');
+  };
+  if (!state?.roomId) {
+    handleBackToRoom();
+  }
 
   const setVideoTracks = async () => {
     try {
@@ -20,6 +31,7 @@ export function Caller() {
         return;
       }
       stream.getTracks().forEach((track) => {
+        alert(pcRef.current);
         if (!pcRef.current) return;
         pcRef.current.addTrack(track, stream);
       });
@@ -27,21 +39,19 @@ export function Caller() {
         console.log(e);
       };
       pcRef.current.onicecandidate = (e) => {
-        console.log('will create ice candidate');
         if (e.candidate) {
           if (!socketRef.current) return;
-          console.log('onicecandidate');
           socketRef.current.emit('candidate', e.candidate);
         }
       };
       pcRef.current.ontrack = (ev) => {
-        console.log('add remotetrack success');
+        console.log('doctor call ev', ev);
+        console.log('pcRef', pcRef.current);
         if (remoteVideoRef.current) {
-          console.log('will connect remote ref');
           remoteVideoRef.current.srcObject = ev.streams[0];
         }
       };
-      socketRef.current.emit('join_room', '1234');
+      socketRef.current.emit('join_room', state.roomId);
     } catch (e) {
       console.error(e);
     }
@@ -65,12 +75,10 @@ export function Caller() {
     if (!(pcRef.current && socketRef.current)) return;
     try {
       await pcRef.current.setRemoteDescription(new RTCSessionDescription(sdp));
-      console.log('answer set remote description success');
       const mySdp = await pcRef.current.createAnswer({
         offerToReceiveAudio: false,
         offerToReceiveVideo: true,
       });
-      console.log('create answer');
       await pcRef.current.setLocalDescription(new RTCSessionDescription(mySdp));
       socketRef.current.emit('answer', mySdp);
     } catch (e) {
@@ -79,7 +87,7 @@ export function Caller() {
   };
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:8080');
+    socketRef.current = io(SocketDomain);
     pcRef.current = new RTCPeerConnection(PC_CONFIG);
 
     const socket = socketRef.current;
@@ -121,8 +129,9 @@ export function Caller() {
   }, []);
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       <button onClick={() => setVideoTracks()}>test</button>
+      <button onClick={handleBackToRoom}>방으로 되돌아가기</button>
       <video
         id={'localVideo'}
         autoPlay
