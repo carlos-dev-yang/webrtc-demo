@@ -24,14 +24,13 @@ export function DoctorCall() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: false,
+        audio: true,
       });
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
       if (!(pcRef.current && socketRef.current)) {
         return;
       }
       stream.getTracks().forEach((track) => {
-        alert(pcRef.current);
         if (!pcRef.current) return;
         pcRef.current.addTrack(track, stream);
       });
@@ -61,8 +60,8 @@ export function DoctorCall() {
     if (!(pcRef.current && socketRef.current)) return;
     try {
       const sdp = await pcRef.current.createOffer({
-        offerToReceiveAudio: false,
         offerToReceiveVideo: true,
+        offerToReceiveAudio: true,
       });
       await pcRef.current.setLocalDescription(new RTCSessionDescription(sdp));
       socketRef.current.emit('offer', sdp);
@@ -76,8 +75,8 @@ export function DoctorCall() {
     try {
       await pcRef.current.setRemoteDescription(new RTCSessionDescription(sdp));
       const mySdp = await pcRef.current.createAnswer({
-        offerToReceiveAudio: false,
         offerToReceiveVideo: true,
+        offerToReceiveAudio: true,
       });
       await pcRef.current.setLocalDescription(new RTCSessionDescription(mySdp));
       socketRef.current.emit('answer', mySdp);

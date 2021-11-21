@@ -24,7 +24,7 @@ export function PatientCall() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: false,
+        audio: true,
       });
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
       if (!(pcRef.current && socketRef.current)) {
@@ -44,8 +44,6 @@ export function PatientCall() {
         }
       };
       pcRef.current.ontrack = (ev) => {
-        console.log('patient call ev', ev);
-        console.log('pcRef', pcRef.current);
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = ev.streams[0];
         }
@@ -60,8 +58,8 @@ export function PatientCall() {
     if (!(pcRef.current && socketRef.current)) return;
     try {
       const sdp = await pcRef.current.createOffer({
-        offerToReceiveAudio: false,
         offerToReceiveVideo: true,
+        offerToReceiveAudio: true,
       });
       await pcRef.current.setLocalDescription(new RTCSessionDescription(sdp));
       socketRef.current.emit('offer', sdp);
@@ -76,8 +74,8 @@ export function PatientCall() {
       await pcRef.current.setRemoteDescription(new RTCSessionDescription(sdp));
       console.log('answer set remote description success');
       const mySdp = await pcRef.current.createAnswer({
-        offerToReceiveAudio: false,
         offerToReceiveVideo: true,
+        offerToReceiveAudio: true,
       });
       console.log('create answer');
       await pcRef.current.setLocalDescription(new RTCSessionDescription(mySdp));
